@@ -45,8 +45,9 @@ import {
 
 type Tab = "all" | "email" | "phone";
 
-const STORAGE_KEY = "clipiq.items.v1";
-const PINNED_KEY = "clipiq.pinned.v1";
+const STORAGE_KEY = "clipiq.items.v2";
+const PINNED_KEY = "clipiq.pinned.v2";
+const INITIALIZED_KEY = "clipiq.initialized";
 
 function loadPinned(): Set<string> {
   try {
@@ -61,24 +62,56 @@ function loadPinned(): Set<string> {
 
 function loadItems(): ClipItem[] {
   try {
+    // Migrate from old v1 key if it exists
+    const oldRaw = localStorage.getItem("clipiq.items.v1");
+    if (oldRaw) {
+      const oldItems = JSON.parse(oldRaw) as ClipItem[];
+      // Only migrate if they look like real user data (not seed data)
+      const realItems = oldItems.filter(
+        (i) => !["ada.lovelace@analytical.io", "grace.hopper@navy.mil"].includes(i.value)
+      );
+      if (realItems.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(realItems));
+        localStorage.removeItem("clipiq.items.v1");
+        return realItems;
+      }
+      localStorage.removeItem("clipiq.items.v1");
+    }
+
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return seedItems();
-    return JSON.parse(raw) as ClipItem[];
+    if (raw) {
+      const parsed = JSON.parse(raw) as ClipItem[];
+      if (Array.isArray(parsed)) return parsed;
+    }
+    // First ever visit — return empty, no seed data
+    return [];
   } catch {
-    return seedItems();
+    return [];
   }
 }
 
-function seedItems(): ClipItem[] {
-  const now = Date.now();
-  const sample =
-    "Contact list:\nada.lovelace@analytical.io, grace.hopper@navy.mil, linus@kernel.org, ken@bell-labs.com\n+1 (415) 555-2671, +44 20 7946 0958, +91 98765 43210, 020 7946 0991";
-  const items = makeItems(parseClipboard(sample));
-  const yesterday = now - 86400000 - 3_600_000;
-  return items.map((it, idx) => ({
-    ...it,
-    createdAt: idx % 3 === 0 ? yesterday + idx * 1000 : now - idx * 60_000,
-  }));
+function saveItems(items: ClipItem[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch (e) {
+    // localStorage full — try removing oldest items to make room
+    console.warn("Storage full, pruning oldest clips");
+    try {
+      const pruned = items.slice(0, Math.floor(items.length * 0.8));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
+    } catch {
+      /* noop */
+    }
+  }
+}
+
+function savePinned(items: ClipItem[]) {
+  try {
+    const ids = items.filter((i) => i.pinned).map((i) => i.id);
+    localStorage.setItem(PINNED_KEY, JSON.stringify(ids));
+  } catch {
+    /* noop */
+  }
 }
 
 export function ClipboardDashboard() {
@@ -113,8 +146,10 @@ export function ClipboardDashboard() {
     return () => window.removeEventListener(SETTINGS_EVENT, onChange);
   }, []);
 
+  // Persist every change immediately and permanently
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    saveItems(items);
+    savePinned(items);
   }, [items]);
 
   // Auto-enrich emails whenever a provider is configured.
@@ -167,16 +202,7 @@ export function ClipboardDashboard() {
     [filtered]
   );
 
-  // Persist pinned IDs separately so they're stable across reloads even
-  // before the rest of items hydrates.
-  useEffect(() => {
-    try {
-      const ids = items.filter((i) => i.pinned).map((i) => i.id);
-      localStorage.setItem(PINNED_KEY, JSON.stringify(ids));
-    } catch {
-      /* noop */
-    }
-  }, [items]);
+  // (pinned IDs are saved together with items in the effect above)
 
   function togglePin(id: string) {
     setItems((prev) =>
