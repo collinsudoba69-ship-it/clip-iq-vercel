@@ -15,8 +15,8 @@ export interface EnrichmentResult {
   confidence?: number;
 }
 
-const ENV_HUNTER = import.meta.env.VITE_HUNTER_API_KEY as string | undefined;
-const ENV_CLEARBIT = import.meta.env.VITE_CLEARBIT_API_KEY as string | undefined;
+const ENV_HUNTER = import.meta.env?.VITE_HUNTER_API_KEY as string | undefined;
+const ENV_CLEARBIT = import.meta.env?.VITE_CLEARBIT_API_KEY as string | undefined;
 
 const cache = new Map<string, EnrichmentResult | null>();
 
