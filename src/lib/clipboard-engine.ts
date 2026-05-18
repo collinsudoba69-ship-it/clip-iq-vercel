@@ -15,19 +15,79 @@ export interface ClipItem {
 
 /* ---------------- Name enrichment ---------------- */
 
-/** Local rule: derive a human name from the local-part of an email. */
+// Common non-name words to ignore in email local parts
+const STOP_WORDS = new Set([
+  "info","contact","hello","hi","hey","mail","email","admin","support",
+  "help","team","no","noreply","reply","do","not","sales","marketing",
+  "office","work","me","my","the","and","for","with","from","news",
+  "newsletter","billing","accounts","account","hr","jobs","career",
+  "careers","press","media","pr","legal","privacy","security","dev",
+  "developer","api","bot","auto","automated","notification","alerts",
+  "alert","system","service","services","business","enquiry","enquiries",
+  "inquiry","inquiries","feedback","general","official","main","inbox",
+]);
+
+// Common name prefixes/titles to strip
+const TITLES = new Set([
+  "mr","mrs","ms","dr","prof","sir","rev","eng","barr","hon","chief",
+]);
+
+// Digits-only or mostly-digit segments
+function isJunk(s: string): boolean {
+  if (s.length === 0) return true;
+  if (s.length === 1) return true; // single letter not useful alone
+  const digitRatio = (s.match(/\d/g) ?? []).length / s.length;
+  if (digitRatio > 0.5) return true; // more digits than letters
+  if (STOP_WORDS.has(s.toLowerCase())) return true;
+  if (TITLES.has(s.toLowerCase())) return true;
+  return false;
+}
+
+function capitalize(s: string): string {
+  if (s.length === 0) return s;
+  // Handle hyphenated names like "mary-jane" → "Mary-Jane"
+  return s
+    .split("-")
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join("-");
+}
+
+/** Smart local rule: derive a human name from the local-part of an email. */
 export function deriveNameFromEmail(email: string): string | undefined {
   const at = email.indexOf("@");
   if (at < 1) return undefined;
-  const local = email.slice(0, at);
-  const parts = local
-    .split(/[._\-+]+/)
-    .map((p) => p.replace(/[^a-zA-Z]/g, ""))
-    .filter((p) => p.length >= 2);
-  if (parts.length < 2) return undefined;
-  return parts
+
+  const domain = email.slice(at + 1).toLowerCase();
+  let local = email.slice(0, at);
+
+  // Strip leading/trailing underscores or dots
+  local = local.replace(/^[._]+|[._]+$/g, "");
+
+  // Split on common separators: . _ - + and also on camelCase boundaries
+  // e.g. "johnDoe" → ["john", "Doe"], "john.doe" → ["john", "doe"]
+  const raw = local
+    .replace(/([a-z])([A-Z])/g, "$1 $2") // camelCase split
+    .split(/[._\-+\s]+/);
+
+  // Clean each segment: remove trailing/leading digits, keep only letters and hyphens
+  const segments = raw
+    .map((p) => p.replace(/^\d+|\d+$/g, "").replace(/[^a-zA-Z-]/g, ""))
+    .filter((p) => !isJunk(p));
+
+  // Need at least 2 clean name parts to be confident it's a real name
+  if (segments.length < 2) {
+    // Single segment — only use if it looks like a real name (4+ letters, not a stop word)
+    if (segments.length === 1 && segments[0].length >= 4) {
+      // Could be a real first name like "collins@..." 
+      return capitalize(segments[0]);
+    }
+    return undefined;
+  }
+
+  // Take first 3 segments max (first, middle, last)
+  return segments
     .slice(0, 3)
-    .map((p) => p[0].toUpperCase() + p.slice(1).toLowerCase())
+    .map(capitalize)
     .join(" ");
 }
 
