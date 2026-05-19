@@ -1,9 +1,9 @@
 // ClipIQ — background service worker (MV3)
+// Acts as the storage bridge between sidepanel and content scripts
 
 chrome.runtime.onInstalled.addListener(() => {
-  // Enable side panel on all tabs by default
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-  console.log("[ClipIQ] installed");
+  console.log("[ClipIQ] installed v1.2");
 });
 
 chrome.action.onClicked.addListener(async (tab) => {
@@ -16,24 +16,22 @@ chrome.action.onClicked.addListener(async (tab) => {
   await chrome.sidePanel.open({ windowId: tab.windowId });
 });
 
-// ---- Clipboard read from active tab ----
-async function readClipboardFromActiveTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) return null;
-  const [{ result } = { result: null }] = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: async () => {
-      try { return await navigator.clipboard.readText(); } catch { return null; }
-    },
-  });
-  return result;
+// ---- Storage helpers (chrome.storage.local — shared across all extension pages) ----
+const STORAGE_KEY = "clipiq.items.v2";
+
+async function getClips() {
+  const result = await chrome.storage.local.get(STORAGE_KEY);
+  return result[STORAGE_KEY] || [];
+}
+
+async function saveClips(clips) {
+  await chrome.storage.local.set({ [STORAGE_KEY]: clips });
 }
 
 // ---- Paste into focused element on active tab ----
 function insertAtCursor(text) {
   const el = document.activeElement;
   if (!el) return false;
-  // Gmail compose box (contenteditable)
   if (el.isContentEditable || el.getAttribute('role') === 'textbox') {
     document.execCommand('insertText', false, text);
     el.dispatchEvent(new InputEvent('input', { bubbles: true }));
@@ -55,22 +53,56 @@ function insertAtCursor(text) {
 async function pasteToActiveTab(text) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return { ok: false };
-  const [{ result } = { result: false }] = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    args: [text],
-    func: insertAtCursor,
-  });
-  return { ok: !!result };
+  try {
+    const [{ result } = { result: false }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      args: [text],
+      func: insertAtCursor,
+    });
+    return { ok: !!result };
+  } catch {
+    return { ok: false };
+  }
+}
+
+async function readClipboardFromActiveTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return null;
+  try {
+    const [{ result } = { result: null }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: async () => {
+        try { return await navigator.clipboard.readText(); } catch { return null; }
+      },
+    });
+    return result;
+  } catch { return null; }
 }
 
 // ---- Message bridge ----
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === 'CLIPIQ_READ') {
+  if (msg?.type === "CLIPIQ_READ") {
     readClipboardFromActiveTab().then(text => sendResponse({ text }));
     return true;
   }
-  if (msg?.type === 'CLIPIQ_PASTE' && typeof msg.text === 'string') {
+  if (msg?.type === "CLIPIQ_PASTE") {
     pasteToActiveTab(msg.text).then(sendResponse);
+    return true;
+  }
+  if (msg?.type === "CLIPIQ_GET_CLIPS") {
+    getClips().then(clips => sendResponse({ clips }));
+    return true;
+  }
+  if (msg?.type === "CLIPIQ_SAVE_CLIPS") {
+    saveClips(msg.clips).then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (msg?.type === "CLIPIQ_ADD_CLIP") {
+    getClips().then(async clips => {
+      clips.push(msg.clip);
+      await saveClips(clips);
+      sendResponse({ ok: true, clips });
+    });
     return true;
   }
   return false;
