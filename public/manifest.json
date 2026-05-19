@@ -1,26 +1,15 @@
 {
-  "name": "ClipIQ — Clipboard Intelligence",
-  "short_name": "ClipIQ",
-  "description": "Smart clipboard manager that splits messy text into individual emails and phone numbers with one-click copy and real name lookups.",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "orientation": "any",
-  "background_color": "#0b0f1c",
-  "theme_color": "#0b0f1c",
-  "categories": ["productivity", "utilities"],
-  "icons": [
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ]
+  "manifest_version": 3,
+  "name": "ClipIQ - Clipboard",
+  "version": "1.0",
+  "permissions": [
+    "sidePanel",
+    "storage"
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Open ClipIQ"
+  }
 }
