@@ -1,16 +1,232 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClipIQ</title>
-    <style>
-      body { margin: 0; font-family: system-ui, sans-serif; background: #0f1424; color: #fff; }
-      iframe { border: 0; width: 100%; height: 100vh; }
-    </style>
-  </head>
-  <body>
-    <!-- In production, this loads the bundled React app. For the demo, point at the live PWA. -->
-    <iframe src="https://clipiq.app" title="ClipIQ"></iframe>
-  </body>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ClipIQ</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0b0f1c;color:#e6edf3;height:100vh;display:flex;flex-direction:column;font-size:13px}
+    header{padding:12px 14px;border-bottom:1px solid #1e2740;display:flex;align-items:center;gap:8px;background:#0f1424}
+    header img{width:22px;height:22px;border-radius:6px}
+    header h1{font-size:14px;font-weight:700;flex:1;color:#fff}
+    header a{font-size:11px;color:#58a6ff;text-decoration:none}
+    .search{padding:10px 12px;border-bottom:1px solid #1e2740}
+    .search input{width:100%;padding:7px 10px;background:#151c2e;border:1px solid #2a3555;border-radius:8px;color:#e6edf3;font-size:12px;outline:none}
+    .search input:focus{border-color:#3b82f6}
+    .tabs{display:flex;border-bottom:1px solid #1e2740;background:#0f1424}
+    .tab{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:600;color:#6b7fa3;cursor:pointer;border-bottom:2px solid transparent}
+    .tab.active{color:#3b82f6;border-bottom-color:#3b82f6}
+    .clips{flex:1;overflow-y:auto;padding:8px}
+    .clip{background:#111827;border:1px solid #1e2740;border-radius:10px;padding:10px 11px;margin-bottom:7px;cursor:pointer;transition:all 0.15s}
+    .clip:hover{border-color:#3b82f6;background:#131f35}
+    .clip-type{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px}
+    .clip-type.email{color:#34d399}
+    .clip-type.phone{color:#f59e0b}
+    .clip-type.text{color:#a78bfa}
+    .clip-value{font-size:12px;color:#e6edf3;word-break:break-all;line-height:1.4}
+    .clip-name{font-size:10px;color:#6b7fa3;margin-top:3px}
+    .clip-actions{display:flex;gap:5px;margin-top:7px}
+    .btn{padding:4px 10px;border-radius:6px;border:none;font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s}
+    .btn-copy{background:#1e3a5f;color:#60a5fa}
+    .btn-copy:hover{background:#1d4ed8;color:#fff}
+    .btn-paste{background:#14532d;color:#4ade80}
+    .btn-paste:hover{background:#16a34a;color:#fff}
+    .btn-paste.pasting{background:#1e3a5f;color:#93c5fd}
+    .empty{text-align:center;padding:40px 20px;color:#4b5980}
+    .empty p{font-size:12px;line-height:1.8}
+    .paste-input{padding:10px 12px;border-top:1px solid #1e2740;background:#0f1424}
+    .paste-input textarea{width:100%;padding:8px 10px;background:#151c2e;border:1px solid #2a3555;border-radius:8px;color:#e6edf3;font-size:12px;outline:none;resize:none;height:64px}
+    .paste-input textarea:focus{border-color:#3b82f6}
+    .paste-input button{width:100%;margin-top:6px;padding:8px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+    .paste-input button:hover{background:#2563eb}
+    .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d4ed8;color:#fff;padding:7px 16px;border-radius:20px;font-size:11px;font-weight:600;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1}
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#1e2740;border-radius:4px}
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="icon.png" alt="ClipIQ"/>
+  <h1>ClipIQ</h1>
+  <a href="https://smartclip-iq.vercel.app" target="_blank">Open full site ↗</a>
+</header>
+
+<div class="search">
+  <input type="text" id="search" placeholder="Search clips..." oninput="renderClips()"/>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="setTab('all')">All</div>
+  <div class="tab" onclick="setTab('email')">Emails</div>
+  <div class="tab" onclick="setTab('phone')">Phones</div>
+  <div class="tab" onclick="setTab('text')">Text</div>
+</div>
+
+<div class="clips" id="clips"></div>
+
+<div class="paste-input">
+  <textarea id="pasteText" placeholder="Paste anything here to save to ClipIQ..."></textarea>
+  <button onclick="saveFromInput()">＋ Save to ClipIQ</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'clipiq.items.v2';
+let allClips = [];
+let activeTab = 'all';
+
+// Load clips from localStorage (shared with website via same key)
+function loadClips() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    allClips = raw ? JSON.parse(raw) : [];
+  } catch { allClips = []; }
+}
+
+function saveClips() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allClips));
+}
+
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['all','email','phone','text'][i] === tab);
+  });
+  renderClips();
+}
+
+function renderClips() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let clips = [...allClips].reverse();
+
+  if (activeTab !== 'all') clips = clips.filter(c => c.type === activeTab);
+  if (q) clips = clips.filter(c => c.value.toLowerCase().includes(q) || (c.name||'').toLowerCase().includes(q));
+
+  const el = document.getElementById('clips');
+  if (clips.length === 0) {
+    el.innerHTML = `<div class="empty"><p>No clips yet.<br/>Copy something and paste it below<br/>to save it to ClipIQ.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = clips.map(clip => `
+    <div class="clip" id="clip-${clip.id}">
+      <div class="clip-type ${clip.type}">${clip.type}</div>
+      <div class="clip-value">${escHtml(clip.value)}</div>
+      ${clip.name ? `<div class="clip-name">👤 ${escHtml(clip.name)}</div>` : ''}
+      <div class="clip-actions">
+        <button class="btn btn-copy" onclick="copyClip('${escAttr(clip.id)}','${escAttr(clip.value)}')">Copy</button>
+        <button class="btn btn-paste" id="paste-${clip.id}" onclick="pasteClip('${escAttr(clip.id)}','${escAttr(clip.value)}')">Paste into page</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+async function copyClip(id, value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    showToast('✓ Copied!');
+  } catch {
+    showToast('Copy failed');
+  }
+}
+
+async function pasteClip(id, value) {
+  const btn = document.getElementById('paste-' + id);
+  btn.textContent = 'Pasting...';
+  btn.classList.add('pasting');
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: 'CLIPIQ_PASTE', text: value });
+    if (resp?.ok) {
+      showToast('✓ Pasted into page!');
+    } else {
+      // Fallback — copy to clipboard so user can Ctrl+V
+      await navigator.clipboard.writeText(value);
+      showToast('Copied! Press Ctrl+V to paste');
+    }
+  } catch {
+    await navigator.clipboard.writeText(value);
+    showToast('Copied! Press Ctrl+V to paste');
+  }
+  setTimeout(() => {
+    btn.textContent = 'Paste into page';
+    btn.classList.remove('pasting');
+  }, 1500);
+}
+
+function makeId() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function detectType(text) {
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text.trim())) return 'email';
+  if (/^[\+\d\s\(\)\-\.]{7,}$/.test(text.trim())) return 'phone';
+  return 'text';
+}
+
+function saveFromInput() {
+  const ta = document.getElementById('pasteText');
+  const raw = ta.value.trim();
+  if (!raw) return;
+
+  // Split by newlines or commas to handle multiple items
+  const lines = raw.split(/[\n,]+/).map(l => l.trim()).filter(Boolean);
+  const now = Date.now();
+
+  lines.forEach((line, i) => {
+    allClips.push({
+      id: makeId() + i,
+      value: line,
+      type: detectType(line),
+      createdAt: now + i,
+      pinned: false,
+    });
+  });
+
+  saveClips();
+  ta.value = '';
+  renderClips();
+  showToast(`✓ Saved ${lines.length} clip${lines.length > 1 ? 's' : ''}!`);
+}
+
+// Auto-read clipboard when extension opens
+async function tryReadClipboard() {
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: 'CLIPIQ_READ' });
+    if (resp?.text && resp.text.trim()) {
+      document.getElementById('pasteText').value = resp.text;
+    }
+  } catch { /* noop */ }
+}
+
+// Init
+loadClips();
+renderClips();
+tryReadClipboard();
+
+// Refresh every 3s in case website added new clips
+setInterval(() => {
+  loadClips();
+  renderClips();
+}, 3000);
+</script>
+</body>
 </html>
