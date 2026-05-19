@@ -2,306 +2,508 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ClipIQ</title>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0b0f1c;color:#e6edf3;height:100vh;display:flex;flex-direction:column;font-size:13px}
-    header{padding:12px 14px;border-bottom:1px solid #1e2740;display:flex;align-items:center;gap:8px;background:#0f1424;flex-shrink:0}
-    header img{width:22px;height:22px;border-radius:6px}
-    header h1{font-size:14px;font-weight:700;flex:1;color:#fff}
-    header a{font-size:11px;color:#58a6ff;text-decoration:none;white-space:nowrap}
-    .search{padding:8px 12px;border-bottom:1px solid #1e2740;flex-shrink:0}
-    .search input{width:100%;padding:7px 10px;background:#151c2e;border:1px solid #2a3555;border-radius:8px;color:#e6edf3;font-size:12px;outline:none}
-    .search input:focus{border-color:#3b82f6}
-    .tabs{display:flex;border-bottom:1px solid #1e2740;background:#0f1424;flex-shrink:0}
-    .tab{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:600;color:#6b7fa3;cursor:pointer;border-bottom:2px solid transparent}
-    .tab.active{color:#3b82f6;border-bottom-color:#3b82f6}
-    .clips{flex:1;overflow-y:auto;padding:8px}
-    .clip{background:#111827;border:1px solid #1e2740;border-radius:10px;padding:10px 11px;margin-bottom:7px;transition:all 0.15s}
-    .clip:hover{border-color:#3b82f6;background:#131f35}
-    .clip-type{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px}
-    .clip-type.email{color:#34d399}.clip-type.phone{color:#f59e0b}.clip-type.text{color:#a78bfa}
-    .clip-value{font-size:12px;color:#e6edf3;word-break:break-all;line-height:1.4}
-    .clip-name{font-size:10px;color:#6b7fa3;margin-top:3px}
-    .clip-actions{display:flex;gap:5px;margin-top:7px}
-    .btn{padding:4px 10px;border-radius:6px;border:none;font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s}
-    .btn-copy{background:#1e3a5f;color:#60a5fa}.btn-copy:hover{background:#1d4ed8;color:#fff}
-    .btn-paste{background:#14532d;color:#4ade80}.btn-paste:hover{background:#16a34a;color:#fff}
-    .btn-delete{background:#2d1515;color:#f87171}.btn-delete:hover{background:#7f1d1d;color:#fff}
-    .empty{text-align:center;padding:40px 20px;color:#4b5980}
-    .empty p{font-size:12px;line-height:1.8}
-    .add-section{padding:10px 12px;border-top:1px solid #1e2740;background:#0f1424;flex-shrink:0}
-    .add-section textarea{width:100%;padding:8px 10px;background:#151c2e;border:1px solid #2a3555;border-radius:8px;color:#e6edf3;font-size:12px;outline:none;resize:none;height:60px;font-family:inherit}
-    .add-section textarea:focus{border-color:#3b82f6}
-    .add-section textarea::placeholder{color:#4b5980}
-    .add-row{display:flex;gap:6px;margin-top:6px}
-    .btn-save{flex:1;padding:8px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
-    .btn-save:hover{background:#2563eb}
-    .btn-clip{padding:8px 10px;background:#151c2e;color:#6b7fa3;border:1px solid #2a3555;border-radius:8px;font-size:12px;cursor:pointer}
-    .btn-clip:hover{border-color:#3b82f6;color:#60a5fa}
-    .sync-bar{padding:4px 12px;background:#0a1628;border-top:1px solid #1e2740;font-size:10px;color:#4b5980;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-    .sync-dot{width:6px;height:6px;border-radius:50%;background:#4b5980;display:inline-block;margin-right:4px}
-    .sync-dot.synced{background:#34d399}
-    .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1d4ed8;color:#fff;padding:7px 16px;border-radius:20px;font-size:11px;font-weight:600;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
-    .toast.show{opacity:1}
-    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e2740;border-radius:4px}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0b0f1c;
+      color: #e6edf3;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #0f1424;
+      border-bottom: 1px solid #1e2740;
+      flex-shrink: 0;
+    }
+    .header img { width: 24px; height: 24px; border-radius: 6px; }
+    .header-title { font-size: 15px; font-weight: 700; flex: 1; }
+    .header-link {
+      font-size: 11px; color: #58a6ff; text-decoration: none;
+      padding: 4px 8px; border: 1px solid #1e3a5f; border-radius: 6px;
+    }
+    .header-link:hover { background: #1e3a5f; }
+
+    /* SEARCH */
+    .search-box {
+      padding: 8px 12px;
+      border-bottom: 1px solid #1e2740;
+      flex-shrink: 0;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 7px 12px;
+      background: #151c2e;
+      border: 1px solid #2a3555;
+      border-radius: 8px;
+      color: #e6edf3;
+      font-size: 12px;
+      outline: none;
+    }
+    .search-box input:focus { border-color: #3b82f6; }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      background: #0f1424;
+      border-bottom: 1px solid #1e2740;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 2px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7fa3;
+      cursor: pointer;
+      border: none;
+      background: none;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { color: #93c5fd; }
+    .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+
+    /* CLIPS LIST */
+    .clips-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .clips-list::-webkit-scrollbar { width: 4px; }
+    .clips-list::-webkit-scrollbar-thumb { background: #1e2740; border-radius: 4px; }
+
+    .clip-card {
+      background: #111827;
+      border: 1px solid #1e2740;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      transition: border-color 0.15s;
+    }
+    .clip-card:hover { border-color: #2a4a7f; }
+
+    .clip-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-bottom: 5px;
+    }
+    .badge-email { background: #064e3b; color: #34d399; }
+    .badge-phone { background: #451a03; color: #f59e0b; }
+    .badge-text  { background: #2e1065; color: #a78bfa; }
+
+    .clip-value {
+      font-size: 12px;
+      color: #e6edf3;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .clip-name {
+      font-size: 10px;
+      color: #6b7fa3;
+      margin-top: 3px;
+    }
+    .clip-actions {
+      display: flex;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .action-btn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-copy   { background: #1e3a5f; color: #60a5fa; }
+    .btn-copy:hover   { background: #1d4ed8; color: #fff; }
+    .btn-paste  { background: #14532d; color: #4ade80; }
+    .btn-paste:hover  { background: #15803d; color: #fff; }
+    .btn-delete { background: #2d1515; color: #f87171; }
+    .btn-delete:hover { background: #7f1d1d; color: #fff; }
+
+    /* EMPTY */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: #4b5980;
+    }
+    .empty-state .emoji { font-size: 36px; margin-bottom: 12px; }
+    .empty-state p { font-size: 12px; line-height: 1.8; }
+
+    /* ADD SECTION */
+    .add-section {
+      padding: 10px 12px;
+      border-top: 1px solid #1e2740;
+      background: #0f1424;
+      flex-shrink: 0;
+    }
+    .add-textarea {
+      width: 100%;
+      padding: 8px 10px;
+      background: #151c2e;
+      border: 1px solid #2a3555;
+      border-radius: 8px;
+      color: #e6edf3;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      resize: none;
+      height: 58px;
+      line-height: 1.5;
+    }
+    .add-textarea:focus { border-color: #3b82f6; }
+    .add-textarea::placeholder { color: #4b5980; }
+    .add-buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .btn-save {
+      flex: 1;
+      padding: 8px;
+      background: #1d4ed8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-save:hover { background: #2563eb; }
+    .btn-read-clip {
+      padding: 8px 12px;
+      background: #151c2e;
+      color: #9ca3af;
+      border: 1px solid #2a3555;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-read-clip:hover { border-color: #3b82f6; color: #60a5fa; }
+
+    /* COUNT BAR */
+    .count-bar {
+      padding: 4px 12px;
+      background: #090d19;
+      border-top: 1px solid #1e2740;
+      font-size: 10px;
+      color: #4b5980;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      z-index: 9999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
 
-<header>
-  <img src="icon.png" alt="ClipIQ"/>
-  <h1>ClipIQ</h1>
-  <a href="https://smartclip-iq.vercel.app" target="_blank">Open site ↗</a>
-</header>
+<div class="header">
+  <img src="icon.png" alt=""/>
+  <span class="header-title">ClipIQ</span>
+  <a class="header-link" href="https://smartclip-iq.vercel.app" target="_blank">Open site ↗</a>
+</div>
 
-<div class="search">
-  <input type="text" id="search" placeholder="🔍 Search clips..." oninput="renderClips()"/>
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="🔍 Search clips..."/>
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="setTab('all')">All</div>
-  <div class="tab" onclick="setTab('email')">📧 Emails</div>
-  <div class="tab" onclick="setTab('phone')">📞 Phones</div>
-  <div class="tab" onclick="setTab('text')">📝 Text</div>
+  <button class="tab-btn active" data-tab="all">All</button>
+  <button class="tab-btn" data-tab="email">📧 Emails</button>
+  <button class="tab-btn" data-tab="phone">📞 Phones</button>
+  <button class="tab-btn" data-tab="text">📝 Text</button>
 </div>
 
-<div class="clips" id="clips"></div>
+<div class="clips-list" id="clipsList"></div>
 
 <div class="add-section">
-  <textarea id="pasteText" placeholder="Type or paste anything here to save..."></textarea>
-  <div class="add-row">
-    <button class="btn-save" onclick="saveFromInput()">＋ Save to ClipIQ</button>
-    <button class="btn-clip" onclick="readFromClipboard()" title="Read from clipboard">📋</button>
+  <textarea class="add-textarea" id="addTextarea" placeholder="Paste or type here to save a clip..."></textarea>
+  <div class="add-buttons">
+    <button class="btn-save" id="saveBtn">＋ Save to ClipIQ</button>
+    <button class="btn-read-clip" id="readClipBtn">📋 Read</button>
   </div>
 </div>
 
-<div class="sync-bar">
-  <span><span class="sync-dot" id="syncDot"></span><span id="syncStatus">Loading...</span></span>
-  <span id="clipCount">0 clips</span>
+<div class="count-bar">
+  <span id="countLabel">0 clips</span>
+  <span id="lastSaved"></span>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const WEBSITE_URL = 'https://smartclip-iq.vercel.app';
-let allClips = [];
-let activeTab = 'all';
-let synced = false;
+  // ─── State ───────────────────────────────────────────────────────────────
+  const STORAGE_KEY = 'clips';
+  let clips = [];
+  let activeTab = 'all';
+  let searchQuery = '';
 
-// ---- Utility ----
-function makeId() {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-function detectType(text) {
-  const t = text.trim();
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return 'email';
-  if (/^[\+\d\s\(\)\-\.]{7,}$/.test(t)) return 'phone';
-  return 'text';
-}
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function showToast(msg, color) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = color || '#1d4ed8';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
-function setSyncStatus(ok, msg) {
-  document.getElementById('syncDot').className = 'sync-dot' + (ok ? ' synced' : '');
-  document.getElementById('syncStatus').textContent = msg;
-}
-
-// ---- Storage via background bridge ----
-async function loadClips() {
-  try {
-    const resp = await chrome.runtime.sendMessage({ type: 'CLIPIQ_GET_CLIPS' });
-    allClips = resp.clips || [];
-    // Also try to pull fresh clips from the website
-    await syncFromWebsite();
-    setSyncStatus(true, 'Synced with website');
-  } catch(e) {
-    setSyncStatus(false, 'Extension storage only');
+  // ─── Storage (chrome.storage.local — works reliably in sidepanel) ─────────
+  function loadClips() {
+    chrome.storage.local.get(STORAGE_KEY, function(result) {
+      clips = result[STORAGE_KEY] || [];
+      render();
+    });
   }
-  renderClips();
-}
 
-async function persistClips() {
-  try {
-    await chrome.runtime.sendMessage({ type: 'CLIPIQ_SAVE_CLIPS', clips: allClips });
-    // Push to website too
-    await syncToWebsite();
-    setSyncStatus(true, 'Synced with website');
-  } catch {
-    setSyncStatus(false, 'Saved locally only');
+  function saveClips(cb) {
+    chrome.storage.local.set({ [STORAGE_KEY]: clips }, function() {
+      document.getElementById('lastSaved').textContent =
+        'Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (cb) cb();
+    });
   }
-}
 
-// ---- Website sync via content script injection ----
-async function syncFromWebsite() {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    // Look for ClipIQ tab specifically
-    const allTabs = await chrome.tabs.query({});
-    const clipiqTab = allTabs.find(t => t.url && t.url.includes('smartclip-iq.vercel.app'));
-    const targetTab = clipiqTab || (tab?.url?.includes('smartclip-iq') ? tab : null);
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  function makeId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
 
-    if (targetTab) {
-      const [{ result }] = await chrome.scripting.executeScript({
-        target: { tabId: targetTab.id },
-        func: (key) => {
-          try { return localStorage.getItem(key); } catch { return null; }
-        },
-        args: ['clipiq.items.v2']
+  function detectType(text) {
+    const t = text.trim();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) return 'email';
+    if (/^[\+\d\s\(\)\-\.]{7,20}$/.test(t)) return 'phone';
+    return 'text';
+  }
+
+  function guessName(email) {
+    const local = email.split('@')[0];
+    const SKIP = new Set(['info','contact','admin','support','hello','noreply','no-reply','mail','team','sales','help']);
+    const parts = local
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .split(/[._\-+0-9]+/)
+      .map(p => p.replace(/[^a-zA-Z]/g, '').toLowerCase())
+      .filter(p => p.length >= 3 && !SKIP.has(p));
+    if (parts.length < 2) return undefined;
+    return parts.slice(0, 2).map(p => p[0].toUpperCase() + p.slice(1)).join(' ');
+  }
+
+  function safe(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function toast(msg, color) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.background = color || '#1d4ed8';
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+  function render() {
+    const q = searchQuery.toLowerCase();
+
+    let visible = [...clips].reverse();
+    if (activeTab !== 'all') visible = visible.filter(c => c.type === activeTab);
+    if (q) visible = visible.filter(c =>
+      c.value.toLowerCase().includes(q) || (c.name || '').toLowerCase().includes(q)
+    );
+
+    const count = clips.length;
+    document.getElementById('countLabel').textContent =
+      count + ' clip' + (count !== 1 ? 's' : '');
+
+    const list = document.getElementById('clipsList');
+
+    if (visible.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">${count === 0 ? '📋' : '🔍'}</div>
+          <p>${count === 0
+            ? 'No clips yet.<br>Type or paste below<br>and hit <b>Save to ClipIQ</b>!'
+            : 'No clips match your search.'
+          }</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = visible.map(c => {
+      const badgeClass = c.type === 'email' ? 'badge-email'
+                       : c.type === 'phone' ? 'badge-phone'
+                       : 'badge-text';
+      return `
+        <div class="clip-card">
+          <span class="clip-badge ${badgeClass}">${safe(c.type)}</span>
+          <div class="clip-value">${safe(c.value)}</div>
+          ${c.name ? `<div class="clip-name">👤 ${safe(c.name)}</div>` : ''}
+          <div class="clip-actions">
+            <button class="action-btn btn-copy"   onclick="doCopy('${safe(c.id)}')">Copy</button>
+            <button class="action-btn btn-paste"  onclick="doPaste('${safe(c.id)}')">Paste</button>
+            <button class="action-btn btn-delete" onclick="doDelete('${safe(c.id)}')">✕ Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── Actions ──────────────────────────────────────────────────────────────
+  function getClipById(id) {
+    return clips.find(c => c.id === id);
+  }
+
+  function doCopy(id) {
+    const clip = getClipById(id);
+    if (!clip) return;
+    navigator.clipboard.writeText(clip.value)
+      .then(() => toast('✓ Copied!', '#1d4ed8'))
+      .catch(() => toast('Copy failed', '#7f1d1d'));
+  }
+
+  function doPaste(id) {
+    const clip = getClipById(id);
+    if (!clip) return;
+    // First copy it, then send paste message to background
+    navigator.clipboard.writeText(clip.value).then(() => {
+      chrome.runtime.sendMessage({ type: 'PASTE', text: clip.value }, function(resp) {
+        if (resp && resp.ok) {
+          toast('✓ Pasted!', '#14532d');
+        } else {
+          toast('Copied! Press Ctrl+V to paste', '#1d4ed8');
+        }
       });
-      if (result) {
-        const webClips = JSON.parse(result);
-        // Merge: combine extension clips + web clips, deduplicate by id
-        const map = new Map();
-        [...allClips, ...webClips].forEach(c => map.set(c.id, c));
-        allClips = Array.from(map.values()).sort((a,b) => a.createdAt - b.createdAt);
-        await chrome.runtime.sendMessage({ type: 'CLIPIQ_SAVE_CLIPS', clips: allClips });
+    }).catch(() => toast('Copy failed', '#7f1d1d'));
+  }
+
+  function doDelete(id) {
+    clips = clips.filter(c => c.id !== id);
+    saveClips(() => render());
+    toast('Deleted', '#7f1d1d');
+  }
+
+  function doSave() {
+    const ta = document.getElementById('addTextarea');
+    const raw = ta.value.trim();
+    if (!raw) { toast('Nothing to save!', '#7f1d1d'); return; }
+
+    // Split by newline or comma to handle bulk paste
+    const lines = raw.split(/[\n,]+/).map(l => l.trim()).filter(Boolean);
+    const now = Date.now();
+
+    lines.forEach((line, i) => {
+      const type = detectType(line);
+      const clip = {
+        id: makeId() + i,
+        value: line,
+        type: type,
+        createdAt: now + i,
+        pinned: false,
+      };
+      if (type === 'email') {
+        const name = guessName(line);
+        if (name) clip.name = name;
       }
-    }
-  } catch { /* website not open, that's fine */ }
-}
-
-async function syncToWebsite() {
-  try {
-    const allTabs = await chrome.tabs.query({});
-    const clipiqTab = allTabs.find(t => t.url && t.url.includes('smartclip-iq.vercel.app'));
-    if (!clipiqTab) return;
-    await chrome.scripting.executeScript({
-      target: { tabId: clipiqTab.id },
-      func: (key, data) => {
-        try { localStorage.setItem(key, data); window.dispatchEvent(new Event('storage')); } catch {}
-      },
-      args: ['clipiq.items.v2', JSON.stringify(allClips)]
+      clips.push(clip);
     });
-  } catch { /* website not open */ }
-}
 
-// ---- UI ----
-function setTab(tab) {
-  activeTab = tab;
-  document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['all','email','phone','text'][i] === tab);
-  });
-  renderClips();
-}
-
-function renderClips() {
-  const q = document.getElementById('search').value.toLowerCase();
-  let clips = [...allClips].reverse();
-  if (activeTab !== 'all') clips = clips.filter(c => c.type === activeTab);
-  if (q) clips = clips.filter(c =>
-    c.value.toLowerCase().includes(q) || (c.name||'').toLowerCase().includes(q)
-  );
-
-  document.getElementById('clipCount').textContent = allClips.length + ' clip' + (allClips.length !== 1 ? 's' : '');
-
-  const el = document.getElementById('clips');
-  if (clips.length === 0) {
-    el.innerHTML = `<div class="empty"><p>${allClips.length === 0
-      ? 'No clips yet.<br/>Paste something below<br/>to save your first clip! 👇'
-      : 'No clips match your search.'}</p></div>`;
-    return;
+    saveClips(() => {
+      ta.value = '';
+      render();
+      toast('✓ Saved ' + lines.length + ' clip' + (lines.length > 1 ? 's' : '') + '!', '#14532d');
+    });
   }
 
-  el.innerHTML = clips.map(clip => `
-    <div class="clip">
-      <div class="clip-type ${clip.type}">${clip.type}</div>
-      <div class="clip-value">${escHtml(clip.value)}</div>
-      ${clip.name ? `<div class="clip-name">👤 ${escHtml(clip.name)}</div>` : ''}
-      <div class="clip-actions">
-        <button class="btn btn-copy" onclick="copyClip('${escHtml(clip.id)}','${escHtml(clip.value).replace(/'/g,"\\'")}')">Copy</button>
-        <button class="btn btn-paste" onclick="pasteClip('${escHtml(clip.value).replace(/'/g,"\\'")}')">Paste</button>
-        <button class="btn btn-delete" onclick="deleteClip('${escHtml(clip.id)}')">✕</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-async function copyClip(id, value) {
-  try {
-    await navigator.clipboard.writeText(value);
-    showToast('✓ Copied!', '#1d4ed8');
-  } catch {
-    showToast('Copy failed', '#7f1d1d');
-  }
-}
-
-async function pasteClip(value) {
-  try {
-    const resp = await chrome.runtime.sendMessage({ type: 'CLIPIQ_PASTE', text: value });
-    if (resp?.ok) {
-      showToast('✓ Pasted into page!', '#14532d');
-    } else {
-      await navigator.clipboard.writeText(value);
-      showToast('Copied! Now press Ctrl+V', '#1d4ed8');
+  async function doReadClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim()) {
+        document.getElementById('addTextarea').value = text.trim();
+        toast('📋 Clipboard loaded!', '#1d4ed8');
+      } else {
+        toast('Clipboard is empty', '#7f1d1d');
+      }
+    } catch {
+      toast('Allow clipboard permission and try again', '#7f1d1d');
     }
-  } catch {
-    await navigator.clipboard.writeText(value).catch(()=>{});
-    showToast('Copied! Now press Ctrl+V', '#1d4ed8');
   }
-}
 
-async function deleteClip(id) {
-  allClips = allClips.filter(c => c.id !== id);
-  await persistClips();
-  renderClips();
-  showToast('Deleted', '#7f1d1d');
-}
-
-async function saveFromInput() {
-  const ta = document.getElementById('pasteText');
-  const raw = ta.value.trim();
-  if (!raw) { showToast('Nothing to save!', '#7f1d1d'); return; }
-
-  const lines = raw.split(/[\n,]+/).map(l => l.trim()).filter(Boolean);
-  const now = Date.now();
-
-  lines.forEach((line, i) => {
-    allClips.push({
-      id: makeId() + i,
-      value: line,
-      type: detectType(line),
-      createdAt: now + i,
-      pinned: false,
+  // ─── Event Listeners ──────────────────────────────────────────────────────
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      activeTab = this.dataset.tab;
+      render();
     });
   });
 
-  await persistClips();
-  ta.value = '';
-  renderClips();
-  showToast(`✓ Saved ${lines.length} clip${lines.length > 1 ? 's' : ''}!`, '#14532d');
-}
+  // Search
+  document.getElementById('searchInput').addEventListener('input', function() {
+    searchQuery = this.value;
+    render();
+  });
 
-async function readFromClipboard() {
-  try {
-    const resp = await chrome.runtime.sendMessage({ type: 'CLIPIQ_READ' });
-    if (resp?.text?.trim()) {
-      document.getElementById('pasteText').value = resp.text.trim();
-      showToast('📋 Clipboard loaded!', '#1d4ed8');
-    } else {
-      showToast('Clipboard is empty', '#7f1d1d');
+  // Save button
+  document.getElementById('saveBtn').addEventListener('click', doSave);
+
+  // Save on Ctrl+Enter in textarea
+  document.getElementById('addTextarea').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      doSave();
     }
-  } catch {
-    showToast('Could not read clipboard', '#7f1d1d');
-  }
-}
+  });
 
-// ---- Init ----
-loadClips();
+  // Read clipboard button
+  document.getElementById('readClipBtn').addEventListener('click', doReadClipboard);
 
-// Refresh every 5 seconds to pick up changes from website
-setInterval(async () => {
-  await syncFromWebsite();
-  renderClips();
-}, 5000);
+  // Live updates when storage changes (e.g. from another tab)
+  chrome.storage.onChanged.addListener(function(changes) {
+    if (changes[STORAGE_KEY]) {
+      clips = changes[STORAGE_KEY].newValue || [];
+      render();
+    }
+  });
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  loadClips();
 </script>
 </body>
 </html>
