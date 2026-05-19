@@ -92,3 +92,4 @@ document.addEventListener('click', (e) => {
         }, 1500);
     }
 });
+<script src="sidepanel.js"></script>
