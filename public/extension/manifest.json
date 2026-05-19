@@ -1,12 +1,15 @@
 {
   "manifest_version": 3,
   "name": "ClipIQ — Clipboard Intelligence",
-  "version": "1.0.0",
-  "description": "Smart clipboard history. Auto-splits batches of emails and phone numbers into single-click items.",
+  "version": "1.1.0",
+  "description": "Floating clipboard manager for Gmail & any website. See all your clips and paste with one click.",
   "permissions": ["clipboardRead", "clipboardWrite", "sidePanel", "storage", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],
   "action": {
-    "default_title": "Open ClipIQ"
+    "default_title": "Open ClipIQ Sidepanel",
+    "default_icon": {
+      "128": "icon.png"
+    }
   },
   "side_panel": {
     "default_path": "sidepanel.html"
