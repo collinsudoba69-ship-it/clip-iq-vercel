@@ -1,22 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "ClipIQ — Clipboard Intelligence",
-  "version": "2.0.0",
-  "description": "Floating clipboard manager. Save clips and paste them anywhere with one click.",
+  "name": "ClipIQ - Clipboard",
+  "version": "1.0",
   "permissions": [
-    "clipboardRead",
-    "clipboardWrite", 
     "sidePanel",
-    "storage",
-    "activeTab",
-    "scripting"
+    "storage"
   ],
-  "host_permissions": ["<all_urls>"],
-  "action": {
-    "default_title": "Open ClipIQ",
-    "default_icon": { "128": "icon.png" }
+  "side_panel": {
+    "default_path": "sidepanel.html"
   },
-  "side_panel": { "default_path": "sidepanel.html" },
-  "background": { "service_worker": "background.js" },
-  "icons": { "128": "icon.png" }
+  "action": {
+    "default_title": "Open ClipIQ"
+  }
 }
