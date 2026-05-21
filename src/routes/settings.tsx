@@ -159,8 +159,8 @@ function SettingsPage() {
 
     try {
       if (field.key === "hunter") {
-        const res = await fetch(`https://api.hunter.io/v2/email-finder?email=${testEmail}&api_key=${k}`);
-        ok = res.status !== 401 && res.status !== 403;
+        const res = await fetch(`https://api.hunter.io/v2/account?api_key=${k}`);
+        ok = res.status === 200;
       } else if (field.key === "clearbit") {
         const res = await fetch(`https://person.clearbit.com/v2/people/find?email=${testEmail}`, { headers: { Authorization: `Bearer ${k}` } });
         ok = res.status !== 401 && res.status !== 403;
@@ -168,10 +168,16 @@ function SettingsPage() {
         const res = await fetch(`https://api.peopledatalabs.com/v5/person/enrich?email=${testEmail}`, { headers: { "X-Api-Key": k } });
         ok = res.status !== 401 && res.status !== 403;
       } else if (field.key === "snov") {
-        const res = await fetch(`https://api.snov.io/v1/get-emails-from-url?url=${testEmail}`, { headers: { Authorization: `Bearer ${k}` } });
-        ok = res.status !== 401 && res.status !== 403;
+        const res = await fetch(`https://api.snov.io/v1/me`, { headers: { Authorization: `Bearer ${k}` } });
+        ok = res.status === 200;
       } else if (field.key === "abstract") {
         const res = await fetch(`https://emailvalidation.abstractapi.com/v1/?api_key=${k}&email=${testEmail}`);
+        ok = res.status === 200;
+      } else if (field.key === "behindtheemail") {
+        const res = await fetch(
+          `https://api.behindtheemail.com/v1/search?email=${encodeURIComponent(testEmail)}`,
+          { headers: { Authorization: `Bearer ${k}`, "Content-Type": "application/json" } }
+        );
         ok = res.status !== 401 && res.status !== 403;
       }
     } catch { ok = false; }
@@ -193,8 +199,6 @@ function SettingsPage() {
       </header>
 
       <main className="mx-auto max-w-2xl space-y-6 px-4 py-6">
-
-        {/* API Keys Section */}
         <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-xl shadow-black/20">
           <div className="mb-2 flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-cyan-accent" />
@@ -204,7 +208,6 @@ function SettingsPage() {
             Add any API key below to enable automatic real name lookup from email addresses.
             Keys are stored only in your browser — never sent to any server. Free options are listed first.
           </p>
-
           <div className="space-y-5">
             {API_FIELDS.map((field) => (
               <div key={field.key} className="rounded-xl border border-border/50 bg-background/40 p-4">
@@ -250,7 +253,6 @@ function SettingsPage() {
           </div>
         </section>
 
-        {/* Manual Lookup */}
         <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-xl shadow-black/20">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-base">🔍</span>
@@ -276,11 +278,9 @@ function SettingsPage() {
               {lookupLoading ? "Looking up..." : "Look Up"}
             </button>
           </div>
-
           {lookupError && (
             <p className="mt-3 text-xs text-red-400">{lookupError}</p>
           )}
-
           {lookupResult && (
             <div className="mt-4 rounded-xl border border-border/50 bg-background/40 p-4 space-y-2">
               <div className="flex items-center gap-2">
@@ -307,7 +307,6 @@ function SettingsPage() {
           )}
         </section>
 
-        {/* Compact mode */}
         <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-xl shadow-black/20">
           <h2 className="mb-1 text-sm font-semibold">Compact mode</h2>
           <p className="mb-3 text-xs text-muted-foreground">
@@ -324,7 +323,6 @@ function SettingsPage() {
           </label>
         </section>
 
-        {/* Save / Clear buttons */}
         <div className="flex flex-wrap gap-2">
           <button
             onClick={save}
