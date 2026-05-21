@@ -10,7 +10,7 @@ export const Route = createFileRoute("/settings")({
 
 interface ApiField {
   label: string;
-  key: "hunter" | "clearbit" | "peopledatalabs" | "snov" | "abstract";
+  key: "hunter" | "clearbit" | "peopledatalabs" | "snov" | "abstract" | "behindtheemail";
   placeholder: string;
   link: string;
   linkLabel: string;
@@ -19,6 +19,15 @@ interface ApiField {
 }
 
 const API_FIELDS: ApiField[] = [
+  {
+    label: "Behind The Email",
+    key: "behindtheemail",
+    placeholder: "your_behindtheemail_api_key",
+    link: "https://behindtheemail.com/signup",
+    linkLabel: "Sign up at behindtheemail.com →",
+    badge: "BEST",
+    description: "Most powerful — returns full name, job title, company, LinkedIn, Twitter, GitHub and more from any email.",
+  },
   {
     label: "People Data Labs",
     key: "peopledatalabs",
@@ -72,6 +81,10 @@ function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, string>>({});
+  const [lookupEmail, setLookupEmail] = useState("");
+  const [lookupResult, setLookupResult] = useState<any>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState("");
 
   useEffect(() => {
     const k = getApiKeys();
@@ -81,9 +94,30 @@ function SettingsPage() {
       peopledatalabs: k.peopledatalabs ?? "",
       snov: k.snov ?? "",
       abstract: k.abstract ?? "",
+      behindtheemail: k.behindtheemail ?? "",
     });
     setCompact(getCompactMode());
   }, []);
+
+  async function manualLookup() {
+    const email = lookupEmail.trim();
+    if (!email) return;
+    setLookupLoading(true);
+    setLookupResult(null);
+    setLookupError("");
+    try {
+      const { enrichEmail } = await import("@/lib/enrichment");
+      const result = await enrichEmail(email);
+      if (result) {
+        setLookupResult(result);
+      } else {
+        setLookupError("No profile found for this email. Make sure you have a valid API key saved.");
+      }
+    } catch {
+      setLookupError("Lookup failed. Check your API key.");
+    }
+    setLookupLoading(false);
+  }
 
   function save() {
     setApiKeys({
@@ -92,6 +126,7 @@ function SettingsPage() {
       peopledatalabs: keys.peopledatalabs?.trim() || undefined,
       snov: keys.snov?.trim() || undefined,
       abstract: keys.abstract?.trim() || undefined,
+      behindtheemail: keys.behindtheemail?.trim() || undefined,
     });
     setCompactMode(compact);
     clearEnrichmentCache();
@@ -100,10 +135,12 @@ function SettingsPage() {
   }
 
   function clearAll() {
-    setKeys({ hunter: "", clearbit: "", peopledatalabs: "", snov: "", abstract: "" });
+    setKeys({ hunter: "", clearbit: "", peopledatalabs: "", snov: "", abstract: "", behindtheemail: "" });
     setApiKeys({});
     clearEnrichmentCache();
     setTestResult({});
+    setLookupResult(null);
+    setLookupError("");
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -174,7 +211,9 @@ function SettingsPage() {
                 <div className="mb-1 flex items-center gap-2">
                   <span className="text-xs font-semibold text-foreground">{field.label}</span>
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                    field.badge === "FREE"
+                    field.badge === "BEST"
+                      ? "bg-cyan-500/20 text-cyan-400"
+                      : field.badge === "FREE"
                       ? "bg-emerald-500/20 text-emerald-400"
                       : "bg-orange-500/20 text-orange-400"
                   }`}>
@@ -209,6 +248,63 @@ function SettingsPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Manual Lookup */}
+        <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-xl shadow-black/20">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-base">🔍</span>
+            <h2 className="text-sm font-semibold">Manual Email Lookup</h2>
+          </div>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Look up any email address manually to see what profile information is available. Make sure you have saved at least one API key above first.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={lookupEmail}
+              onChange={(e) => setLookupEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && manualLookup()}
+              placeholder="someone@example.com"
+              className="flex-1 rounded-lg border border-border bg-background/70 px-3 py-2 text-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button
+              onClick={manualLookup}
+              disabled={lookupLoading || !lookupEmail.trim()}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {lookupLoading ? "Looking up..." : "Look Up"}
+            </button>
+          </div>
+
+          {lookupError && (
+            <p className="mt-3 text-xs text-red-400">{lookupError}</p>
+          )}
+
+          {lookupResult && (
+            <div className="mt-4 rounded-xl border border-border/50 bg-background/40 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">👤</span>
+                <span className="text-sm font-bold text-foreground">{lookupResult.name}</span>
+                <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-bold text-cyan-400 uppercase">{lookupResult.source}</span>
+              </div>
+              {lookupResult.jobTitle && (
+                <p className="text-xs text-muted-foreground">💼 {lookupResult.jobTitle}{lookupResult.company ? ` at ${lookupResult.company}` : ""}</p>
+              )}
+              {lookupResult.location && (
+                <p className="text-xs text-muted-foreground">📍 {lookupResult.location}</p>
+              )}
+              {lookupResult.linkedin && (
+                <a href={lookupResult.linkedin} target="_blank" rel="noreferrer" className="block text-xs text-cyan-accent hover:underline">🔗 LinkedIn Profile</a>
+              )}
+              {lookupResult.twitter && (
+                <a href={lookupResult.twitter} target="_blank" rel="noreferrer" className="block text-xs text-cyan-accent hover:underline">🐦 Twitter/X Profile</a>
+              )}
+              {lookupResult.github && (
+                <a href={lookupResult.github} target="_blank" rel="noreferrer" className="block text-xs text-cyan-accent hover:underline">🐙 GitHub Profile</a>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Compact mode */}
