@@ -229,7 +229,7 @@ export function ClipboardDashboard() {
 
   function flashToast(msg: string) {
     setToast(msg);
-    setTimeout(() => setToast((t) => (t === msg ? null : t)), 1800);
+    setTimeout(() => setToast((t) => (t === msg ? null : t)), 3000);
   }
 
   async function copyOne(item: ClipItem) {
@@ -243,40 +243,10 @@ export function ClipboardDashboard() {
   }
 
   async function pasteOne(item: ClipItem) {
-    // Browser-extension path (when running inside the MV3 side panel)
-    const chromeApi = (window as unknown as { chrome?: any }).chrome;
-    if (chromeApi?.tabs && chromeApi?.scripting) {
-      try {
-        const [tab] = await chromeApi.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
-        if (tab?.id) {
-          await chromeApi.scripting.executeScript({
-            target: { tabId: tab.id },
-            args: [item.value],
-            func: insertAtCursor,
-          });
-          setPastedId(item.id);
-          setTimeout(
-            () => setPastedId((p) => (p === item.id ? null : p)),
-            1200
-          );
-          return;
-        }
-      } catch {
-        /* fall through */
-      }
-    }
-    // PWA fallback: try the page's own active element, otherwise copy.
-    const ok = insertAtCursor(item.value);
-    if (!ok) {
-      await copyOne(item);
-      flashToast("Pasted to clipboard — focus a field to insert directly");
-      return;
-    }
+    try { await navigator.clipboard.writeText(item.value); } catch { /* noop */ }
     setPastedId(item.id);
     setTimeout(() => setPastedId((p) => (p === item.id ? null : p)), 1200);
+    flashToast("✅ Copied! Click where you want to paste → press Ctrl+V");
   }
 
   function toggleSelect(id: string) {
@@ -425,7 +395,7 @@ export function ClipboardDashboard() {
       <DeleteBar count={selected.size} onDelete={removeSelected} onClear={clearSelection} />
 
       {toast && (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-border bg-surface px-4 py-2 text-xs shadow-xl">
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl border border-cyan-accent/40 bg-surface px-6 py-3 text-sm font-semibold shadow-2xl shadow-black/40 text-foreground whitespace-nowrap">
           {toast}
         </div>
       )}
