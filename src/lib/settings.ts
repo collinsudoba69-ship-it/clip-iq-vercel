@@ -7,6 +7,9 @@
 export interface ApiKeys {
   hunter?: string;
   clearbit?: string;
+  peopledatalabs?: string;
+  snov?: string;
+  abstract?: string;
 }
 
 const KEYS_STORAGE = "clipiq.apikeys.v1";
@@ -36,7 +39,7 @@ export function setApiKeys(keys: ApiKeys): void {
 
 export function hasAnyApiKey(): boolean {
   const k = getApiKeys();
-  return Boolean(k.hunter || k.clearbit);
+  return Boolean(k.hunter || k.clearbit || k.peopledatalabs || k.snov || k.abstract);
 }
 
 export function getCompactMode(): boolean {
