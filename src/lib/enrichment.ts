@@ -8,8 +8,15 @@ import { getApiKeys } from "./settings";
 
 export interface EnrichmentResult {
   name: string;
-  source: "hunter" | "clearbit" | "peopledatalabs" | "snov" | "abstract";
+  source: "hunter" | "clearbit" | "peopledatalabs" | "snov" | "abstract" | "behindtheemail";
   confidence?: number;
+  // Extra profile fields from Behind The Email
+  jobTitle?: string;
+  company?: string;
+  location?: string;
+  linkedin?: string;
+  twitter?: string;
+  github?: string;
 }
 
 const cache = new Map<string, EnrichmentResult | null>();
@@ -106,13 +113,41 @@ async function viaAbstract(email: string): Promise<EnrichmentResult | null> {
   } catch { return null; }
 }
 
+// ---- Provider: Behind The Email ----
+async function viaBehindTheEmail(email: string): Promise<EnrichmentResult | null> {
+  const k = key("behindtheemail");
+  if (!k) return null;
+  try {
+    const res = await fetch(
+      `https://api.behindtheemail.com/v1/search?email=${encodeURIComponent(email)}`,
+      { headers: { "Authorization": `Bearer ${k}`, "Content-Type": "application/json" } }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    // Extract name from the response
+    const name = json?.data?.full_name || json?.data?.name || json?.full_name || json?.name;
+    if (!name) return null;
+    return {
+      name,
+      source: "behindtheemail",
+      jobTitle: json?.data?.job_title || json?.data?.current_role?.title,
+      company: json?.data?.company || json?.data?.current_role?.company,
+      location: json?.data?.location,
+      linkedin: json?.data?.linkedin_url || json?.data?.socials?.linkedin,
+      twitter: json?.data?.twitter_url || json?.data?.socials?.twitter,
+      github: json?.data?.github_url || json?.data?.socials?.github,
+    };
+  } catch { return null; }
+}
+
 // ---- Main enrichment — tries all configured providers in order ----
 export async function enrichEmail(email: string): Promise<EnrichmentResult | null> {
   const cacheKey = email.toLowerCase();
   if (cache.has(cacheKey)) return cache.get(cacheKey) ?? null;
 
-  // Try providers in order — stop at first successful result
+  // Behind The Email first — most comprehensive data
   const result =
+    (await viaBehindTheEmail(email)) ??
     (await viaHunter(email)) ??
     (await viaPeopleDatalabs(email)) ??
     (await viaClearbit(email)) ??
@@ -126,7 +161,7 @@ export async function enrichEmail(email: string): Promise<EnrichmentResult | nul
 
 export function isEnrichmentConfigured(): boolean {
   const k = getApiKeys();
-  return Boolean(k.hunter || k.clearbit || k.peopledatalabs || k.snov || k.abstract);
+  return Boolean(k.hunter || k.clearbit || k.peopledatalabs || k.snov || k.abstract || k.behindtheemail);
 }
 
 export function clearEnrichmentCache(): void {
