@@ -171,7 +171,7 @@ function SettingsPage() {
         const res = await fetch(`https://api.snov.io/v1/me`, { headers: { Authorization: `Bearer ${k}` } });
         ok = res.status === 200;
       } else if (field.key === "abstract") {
-        const res = await fetch(`https://emailvalidation.abstractapi.com/v1/?api_key=${k}&email=${testEmail}`);
+        const res = await fetch(`https://emailvalidation.abstractapi.com/v2/?api_key=${k}&email=${testEmail}`);
         ok = res.status === 200;
       } else if (field.key === "behindtheemail") {
         const res = await fetch(
@@ -199,6 +199,7 @@ function SettingsPage() {
       </header>
 
       <main className="mx-auto max-w-2xl space-y-6 px-4 py-6">
+
         <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-xl shadow-black/20">
           <div className="mb-2 flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-cyan-accent" />
@@ -208,6 +209,7 @@ function SettingsPage() {
             Add any API key below to enable automatic real name lookup from email addresses.
             Keys are stored only in your browser — never sent to any server. Free options are listed first.
           </p>
+
           <div className="space-y-5">
             {API_FIELDS.map((field) => (
               <div key={field.key} className="rounded-xl border border-border/50 bg-background/40 p-4">
